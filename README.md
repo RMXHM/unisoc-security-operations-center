@@ -29,7 +29,7 @@ UniSOC implements a layered security model including:
 
 - PHP 8.3
 - Laravel 13
-- SQLite by default, with Laravel database configuration support for other drivers
+- PostgreSQL (primary) SQLite supported for testing, with Laravel database configuration support for other drivers
 - Eloquent ORM and database migrations
 - Laravel sessions, middleware, validation, rate limiting, and seeders
 - PHPUnit 12
